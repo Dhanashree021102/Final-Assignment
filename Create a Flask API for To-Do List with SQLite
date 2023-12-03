@@ -1,0 +1,76 @@
+#Import necessary libraries
+From flask import Flask, request, jsonify
+From flask_sqlalchemy import SQLAlchemy
+# Initialize Flask app and configure SQLite database
+App = Flask(__name__)
+App.config[â€˜SQLALCHEMY_DATABASE_URIâ€™] = â€˜sqlite:///todos.dbâ€™
+Db = SQLAlchemy(app)
+# Define the Todo model
+Class Todo(db.Model):
+ Id = db.Column(db.Integer, primary_key=True)
+ Title = db.Column(db.String(50), nullable=False)
+ Description = db.Column(db.String(200))
+ Done = db.Column(db.Boolean, default=False)
+# Create the database tables
+Db.create_all()
+# Routes
+# Create a new to-do item
+@app.route(â€˜/todosâ€™, methods=[â€˜POSTâ€™])
+Def create_todo():
+ Data = request.get_json()
+ New_todo = Todo(title=data[â€˜titleâ€™], description=data.get(â€˜descriptionâ€™, â€˜â€™))
+ Db.session.add(new_todo)
+ Db.session.commit()
+ Return jsonify({â€˜messageâ€™: â€˜Todo created successfullyâ€™}), 201
+# Retrieve a list of all to-do items
+@app.route(â€˜/todosâ€™, methods=[â€˜GETâ€™])
+Def get_all_todos():
+ Todos = Todo.query.all()
+ Todo_list = []
+ For todo in todos:
+ Todo_list.append({
+ â€˜idâ€™: todo.id,
+ â€˜titleâ€™: todo.title,
+ â€˜descriptionâ€™: todo.description,
+ â€˜doneâ€™: todo.done
+ })
+ Return jsonify({â€˜todosâ€™: todo_list})
+# Retrieve a specific to-do item by its ID
+@app.route(â€˜/todos/<int:todo_id>â€™, methods=[â€˜GETâ€™])
+Def get_todo_by_id(todo_id):
+ Todo = Todo.query.get(todo_id)
+ If todo:
+ Return jsonify({
+ â€˜idâ€™: todo.id,
+ â€˜titleâ€™: todo.title,
+ â€˜descriptionâ€™: todo.description,
+ â€˜doneâ€™: todo.done
+ })
+ Else:
+ Return jsonify({â€˜messageâ€™: â€˜Todo not foundâ€™}), 404
+# Update a to-do item
+@app.route(â€˜/todos/<int:todo_id>â€™, methods=[â€˜PUTâ€™])
+Def update_todo(todo_id):
+ Todo = Todo.query.get(todo_id)
+ If todo:
+ Data = request.get_json()
+ Todo.title = data[â€˜titleâ€™]
+ Todo.description = data.get(â€˜descriptionâ€™, â€˜â€™)
+ Todo.done = data.get(â€˜doneâ€™, False)
+ Db.session.commit()
+ Return jsonify({â€˜messageâ€™: â€˜Todo updated successfullyâ€™})
+ Else:
+ Return jsonify({â€˜messageâ€™: â€˜Todo not foundâ€™}), 404
+# Delete a to-do item
+@app.route(â€˜/todos/<int:todo_id>â€™, methods=[â€˜DELETEâ€™])
+Def delete_todo(todo_id):
+ Todo = Todo.query.get(todo_id)
+ If todo:
+ Db.session.delete(todo)
+ Db.session.commit()
+ Return jsonify({â€˜messageâ€™: â€˜Todo deleted successfullyâ€™})
+ Else:
+ Return jsonify({â€˜messageâ€™: â€˜Todo not foundâ€™}), 404
+# Run the app
+If __name__ == â€˜__main__â€™:
+ App.run(debug=True)
